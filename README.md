@@ -143,7 +143,7 @@ Oak	15/06/2025	166	Full Foliage	0.8	0.85	1.2
 2. Add marker: "Bud Break" at DOY 90
 3. Create plot â Edit outliers â Download results
 
-### Example 2: Multi-Site Comparison
+### Example 2: Multi-Site Comparison  
 1. Load data â Filter by SiteC: "Forest_A", "Forest_B"
 2. Add seasonal markers â Plot DOY vs chlorophyll
 3. Compare timing between sites â Edit inconsistencies
@@ -178,7 +178,7 @@ Oak	15/06/2025	166	Full Foliage	0.8	0.85	1.2
 - Close browser tabs/restart if performance degrades
 - Use Chrome or Firefox for best compatibility
 
-##  Contributing
+## ð¤ Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
@@ -193,7 +193,7 @@ pip install -r requirements.txt
 ### Reporting Issues
 Please include:
 - Python version
-- Browser type and version
+- Browser type and version  
 - Sample data (if possible)
 - Steps to reproduce the issue
 
@@ -224,4 +224,4 @@ For questions, suggestions, or collaborations:
 
 ---
 
-**Made for the scientific community to advance phenological research**
+**Made for the scientific community to advance phenological research** 
