@@ -45,14 +45,14 @@ A comprehensive web-based tool for analyzing and editing phenological (seasonal 
 
 ```bash
 # Clone or download the project
-git clone https://github.com/xalekter/fmtrace.git
-cd fmtrace
+git clone https://github.com/xalekter/charts_edit.git
+cd charts_edit
 
 # Install required packages
 pip install dash plotly pandas
 
 # Run the application
-python charts.py
+python charts_edit.py
 ```
 
 ### Launch
@@ -184,43 +184,11 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ### Development Setup
 ```bash
-git clone https://github.com/xalekter/fmtrace.git
-cd fmtrace
+git clone https://github.com/xalekter/charts_edit.git
+cd charts_edit
 
 pip install -r requirements.txt
 ```
-
-### Reporting Issues
-Please include:
-- Python version
-- Browser type and version  
-- Sample data (if possible)
-- Steps to reproduce the issue
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-##  Scientific Applications
-
-This tool is designed for:
-- **Phenological research** - Seasonal timing studies
-- **Climate change analysis** - Long-term phenological shifts
-- **Ecological studies** - Species and site comparisons
-- **Data quality control** - Outlier detection and correction
-- **Multi-site research** - Comparative analysis across locations
-
-##  Contact
-
-For questions, suggestions, or collaborations:
-- Create an issue on GitHub
-- Email: your.email@institution.edu
-
-##  Acknowledgments
-
-- Built with [Dash](https://dash.plotly.com/) by Plotly
-- Data visualization powered by [Plotly](https://plotly.com/python/)
-- Data handling with [Pandas](https://pandas.pydata.org/)
 
 ---
 
