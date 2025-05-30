@@ -41,7 +41,7 @@ app.layout = html.Div([
         html.P("🔍 Filter by species (Sc) to compare different organisms"),
         html.P("📅 Add vertical marker lines for important phenological dates"),
         html.P("📈 Blue/colored lines show species-specific trends"),
-        html.P("🎯 Red circles are editable points - click to select for editing"),
+        html.P("🧠 Smart interpolation: New points calculate realistic values for all parameters"),
         html.P("⌨️ Use fine-tune buttons for precise species-specific adjustments"),
     ], style={'backgroundColor': '#f8f9fa', 'padding': 15, 'borderRadius': 5, 'marginBottom': 20}),
     
@@ -160,7 +160,9 @@ app.layout = html.Div([
         
         # Add new point
         html.Div([
-            html.H5("➕ Add New Point"),
+            html.H5("➕ Add New Point (Smart Interpolation)"),
+            html.P("🧠 Automatically interpolates all parameters from neighboring points", 
+                style={'fontSize': '12px', 'color': '#6c757d', 'marginBottom': 10}),
             html.Div([
                 html.Label("X: "),
                 dcc.Input(id='add-x-value', type='number', step=0.01, style={'width': '100px', 'marginRight': 15}),
@@ -215,6 +217,104 @@ def parse_contents(contents, filename):
         return None, f"Error reading file: {str(e)}"
     
     return df, f"Successfully loaded {len(df)} rows and {len(df.columns)} columns"
+
+def create_interpolated_row(df, new_x, x_col, y_col, new_y, species_filter=None, site_filter=None):
+    """
+    Create a new row with interpolated values for all parameters.
+    Respects current filters for species and site assignment.
+    """
+    import numpy as np
+    
+    # Apply filters to get relevant data for interpolation
+    working_df = df.copy()
+    
+    # If filters are active, only interpolate from filtered data
+    if species_filter:
+        working_df = working_df[working_df['Sc'].isin(species_filter)]
+    if site_filter:
+        working_df = working_df[working_df['SiteC'].isin(site_filter)]
+    
+    # Handle edge case: no data after filtering
+    if len(working_df) == 0:
+        # Use full dataset as fallback
+        working_df = df.copy()
+    
+    # Handle edge case: empty dataframe
+    if len(working_df) == 0:
+        new_row = pd.Series(dtype=object)
+        new_row[x_col] = new_x
+        new_row[y_col] = new_y
+        # Set filter values if specified
+        if species_filter and len(species_filter) == 1:
+            new_row['Sc'] = species_filter[0]
+        if site_filter and len(site_filter) == 1:
+            new_row['SiteC'] = site_filter[0]
+        return new_row
+    
+    # Handle edge case: single point
+    if len(working_df) == 1:
+        new_row = working_df.iloc[0].copy()
+        new_row[x_col] = new_x
+        new_row[y_col] = new_y
+        return new_row
+    
+    # Sort dataframe by X column for proper interpolation
+    df_sorted = working_df.sort_values(x_col).reset_index(drop=True)
+    x_values = df_sorted[x_col].values
+    
+    # Find neighboring points for interpolation
+    if new_x <= x_values[0]:
+        new_row = df_sorted.iloc[0].copy()
+    elif new_x >= x_values[-1]:
+        new_row = df_sorted.iloc[-1].copy()
+    else:
+        try:
+            idx_after = np.searchsorted(x_values, new_x)
+            idx_before = idx_after - 1
+            
+            if idx_before < 0:
+                idx_before = 0
+            if idx_after >= len(df_sorted):
+                idx_after = len(df_sorted) - 1
+            
+            x_before = x_values[idx_before]
+            x_after = x_values[idx_after]
+            
+            if x_after == x_before:
+                new_row = df_sorted.iloc[idx_before].copy()
+            else:
+                weight = (new_x - x_before) / (x_after - x_before)
+                new_row = df_sorted.iloc[idx_before].copy()
+                
+                # Interpolate numeric columns
+                numeric_columns = df_sorted.select_dtypes(include=[np.number]).columns
+                for col in numeric_columns:
+                    if col != x_col:
+                        try:
+                            value_before = df_sorted.iloc[idx_before][col]
+                            value_after = df_sorted.iloc[idx_after][col]
+                            
+                            if pd.isna(value_before) or pd.isna(value_after):
+                                continue
+                                
+                            interpolated_value = value_before + weight * (value_after - value_before)
+                            new_row[col] = interpolated_value
+                        except (KeyError, TypeError):
+                            continue
+        except Exception:
+            new_row = df_sorted.iloc[0].copy()
+    
+    # Set the specified X and Y values
+    new_row[x_col] = new_x
+    new_row[y_col] = new_y
+    
+    # Override with filter values if specified
+    if species_filter and len(species_filter) == 1:
+        new_row['Sc'] = species_filter[0]
+    if site_filter and len(site_filter) == 1:
+        new_row['SiteC'] = site_filter[0]
+    
+    return new_row
 
 def apply_filters(df, species_filter, site_filter, description_filter):
     """Apply selected filters to the dataframe"""
@@ -536,20 +636,30 @@ def update_plot(plot_clicks, update_clicks, add_clicks, remove_clicks,
         elif 'add-point-btn' in trigger_id:
             if add_x is not None and add_y is not None and data_store['x_col'] and data_store['y_col']:
                 try:
-                    # Create new row with default values from filtered data if available
-                    if len(filtered_df) > 0:
-                        new_row = filtered_df.iloc[-1].copy()
+                    # Create new row with interpolated values respecting current filters
+                    new_row = create_interpolated_row(df, add_x, data_store['x_col'], data_store['y_col'], add_y, 
+                                species_filter, site_filter)
+                    
+                    # Check if we got a valid row
+                    if new_row is not None:
+                        # Add the new row to main dataframe
+                        df = pd.concat([df, new_row.to_frame().T], ignore_index=True)
+                        data_store['df'] = df
+                        
+                        # Build status message with filter info
+                        filter_info = []
+                        if species_filter and len(species_filter) == 1:
+                            filter_info.append(f"Species: {species_filter[0]}")
+                        if site_filter and len(site_filter) == 1:
+                            filter_info.append(f"Site: {site_filter[0]}")
+
+                        if filter_info:
+                            status_message = f"✅ Added point at DOY {add_x} ({', '.join(filter_info)}). Total: {len(df)}"
+                        else:
+                            status_message = f"✅ Added interpolated point at DOY {add_x}. Total: {len(df)}"
                     else:
-                        new_row = df.iloc[-1].copy()
-                    
-                    new_row[data_store['x_col']] = add_x
-                    new_row[data_store['y_col']] = add_y
-                    
-                    # Add the new row to main dataframe
-                    df = pd.concat([df, new_row.to_frame().T], ignore_index=True)
-                    data_store['df'] = df
-                    
-                    status_message = f"✅ Added new point at ({add_x}, {add_y}). Total points: {len(df)}"
+                        status_message = "❌ Failed to create interpolated point"
+
                     
                     # Use current plot columns
                     x_col = data_store['x_col']
