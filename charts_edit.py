@@ -41,6 +41,8 @@ app.layout = html.Div([
         html.P("🔍 Filter by species (Sc) to compare different organisms"),
         html.P("📅 Add vertical marker lines for important phenological dates"),
         html.P("📈 Blue/colored lines show species-specific trends"),
+        html.P("🎯 Red circles are editable points - click to select for editing"),
+        html.P("⌨️ Keyboard shortcuts: Arrow keys move selected points (←→ X-axis, ↑↓ Y-axis)"),
         html.P("🧠 Smart interpolation: New points calculate realistic values for all parameters"),
         html.P("⌨️ Use fine-tune buttons for precise species-specific adjustments"),
     ], style={'backgroundColor': '#f8f9fa', 'padding': 15, 'borderRadius': 5, 'marginBottom': 20}),
@@ -147,12 +149,14 @@ app.layout = html.Div([
         
         # Fine-tune controls
         html.Div([
-            html.H5("⌨️ Fine-tune Selected Point"),
+            html.H5("⌨️ Fine-tune Selected Point (Arrow Keys or Buttons)"),
+            html.P("🎮 Use keyboard: ← → for X-axis, ↑ ↓ for Y-axis", 
+                style={'fontSize': '12px', 'color': '#6c757d', 'marginBottom': 10}),
             html.Div([
-                html.Button('← X-1', id='x-minus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
-                html.Button('X+1 →', id='x-plus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
-                html.Button('↓ Y-0.1', id='y-minus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
-                html.Button('Y+0.1 ↑', id='y-plus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
+                html.Button('← X-1 (←)', id='x-minus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
+                html.Button('X+1 → (→)', id='x-plus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
+                html.Button('↓ Y-0.1 (↓)', id='y-minus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
+                html.Button('Y+0.1 ↑ (↑)', id='y-plus-btn', style={'margin': '2px', 'padding': '5px 10px'}),
                 html.Div("Step size:", style={'display': 'inline-block', 'marginLeft': 15}),
                 dcc.Input(id='step-size', type='number', value=0.1, step=0.01, style={'width': '80px', 'marginLeft': 5}),
             ], style={'display': 'flex', 'alignItems': 'center', 'gap': '5px'}),
@@ -198,9 +202,55 @@ app.layout = html.Div([
     
     # Hidden div to store data
     html.Div(id='data-store', style={'display': 'none'}),
+
+    # Keyboard event listener - add this new component
+    html.Div(
+        id='keyboard-listener',
+        children=[],
+        tabIndex=0,  # Make it focusable
+        style={
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'outline': 'none',
+            'pointerEvents': 'none',  # Don't interfere with other interactions
+            'zIndex': -1
+        }
+    ),
     
     # Status
-    html.Div(id='status', style={'marginTop': 20, 'padding': 10, 'backgroundColor': '#f0f0f0'})
+    html.Div(id='status', style={'marginTop': 20, 'padding': 10, 'backgroundColor': '#f0f0f0'}),
+
+# Keyboard handler script
+html.Script("""
+    document.addEventListener('keydown', function(event) {
+        // Only handle when not typing in inputs
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+            return;
+        }
+        
+        // Handle arrow keys
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            const btn = document.getElementById('x-minus-btn');
+            if (btn) btn.click();
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            const btn = document.getElementById('x-plus-btn');
+            if (btn) btn.click();
+        } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            const btn = document.getElementById('y-minus-btn');
+            if (btn) btn.click();
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            const btn = document.getElementById('y-plus-btn');
+            if (btn) btn.click();
+        }
+    });
+    """)
 ])
 
 def parse_contents(contents, filename):
@@ -221,98 +271,158 @@ def parse_contents(contents, filename):
 def create_interpolated_row(df, new_x, x_col, y_col, new_y, species_filter=None, site_filter=None):
     """
     Create a new row with interpolated values for all parameters.
-    Respects current filters for species and site assignment.
+    Respects current filters and rounds decimal values to 2 places.
     """
     import numpy as np
     
+    def round_if_decimal(value):
+        """Round numeric values to 2 decimal places if they have decimal part"""
+        try:
+            if pd.isna(value):
+                return value
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                # Check if it's effectively an integer
+                if abs(value - round(value)) < 1e-10:
+                    return int(round(value))
+                else:
+                    return round(float(value), 2)
+            return value
+        except (TypeError, ValueError):
+            return value
+    
     # Apply filters to get relevant data for interpolation
     working_df = df.copy()
+    original_len = len(working_df)
     
-    # If filters are active, only interpolate from filtered data
-    if species_filter:
-        working_df = working_df[working_df['Sc'].isin(species_filter)]
-    if site_filter:
-        working_df = working_df[working_df['SiteC'].isin(site_filter)]
+    # Filter by species if specified
+    if species_filter and len(species_filter) == 1:
+        species_data = working_df[working_df['Sc'] == species_filter[0]]
+        if len(species_data) > 0:
+            working_df = species_data
     
-    # Handle edge case: no data after filtering
+    # Filter by site if specified  
+    if site_filter and len(site_filter) == 1:
+        site_data = working_df[working_df['SiteC'] == site_filter[0]]
+        if len(site_data) > 0:
+            working_df = site_data
+    
+    # Handle edge cases
     if len(working_df) == 0:
-        # Use full dataset as fallback
-        working_df = df.copy()
-    
-    # Handle edge case: empty dataframe
-    if len(working_df) == 0:
+        # Create basic row with filter values
         new_row = pd.Series(dtype=object)
         new_row[x_col] = new_x
-        new_row[y_col] = new_y
-        # Set filter values if specified
+        new_row[y_col] = round_if_decimal(new_y)
+        
+        # Set categorical values from filters
         if species_filter and len(species_filter) == 1:
             new_row['Sc'] = species_filter[0]
         if site_filter and len(site_filter) == 1:
             new_row['SiteC'] = site_filter[0]
+            
+        # Set default values for other common columns
+        for col in df.columns:
+            if col not in [x_col, y_col, 'Sc', 'SiteC'] and col not in new_row:
+                if df[col].dtype in ['object', 'string']:
+                    new_row[col] = '-'  # Default categorical value
+                else:
+                    new_row[col] = round_if_decimal(df[col].median())  # Use median for numeric
+        
         return new_row
     
-    # Handle edge case: single point
     if len(working_df) == 1:
         new_row = working_df.iloc[0].copy()
-        new_row[x_col] = new_x
-        new_row[y_col] = new_y
+        new_row[x_col] = new_x  
+        new_row[y_col] = round_if_decimal(new_y)
         return new_row
     
-    # Sort dataframe by X column for proper interpolation
+    # Sort for interpolation
     df_sorted = working_df.sort_values(x_col).reset_index(drop=True)
     x_values = df_sorted[x_col].values
     
-    # Find neighboring points for interpolation
+    # Determine interpolation strategy
     if new_x <= x_values[0]:
+        # Extrapolate from first point
         new_row = df_sorted.iloc[0].copy()
+        interp_type = "extrapolated_before"
     elif new_x >= x_values[-1]:
-        new_row = df_sorted.iloc[-1].copy()
+        # Extrapolate from last point
+        new_row = df_sorted.iloc[-1].copy()  
+        interp_type = "extrapolated_after"
     else:
+        # Interpolate between points
         try:
             idx_after = np.searchsorted(x_values, new_x)
-            idx_before = idx_after - 1
-            
-            if idx_before < 0:
-                idx_before = 0
-            if idx_after >= len(df_sorted):
-                idx_after = len(df_sorted) - 1
+            idx_before = max(0, idx_after - 1)
+            idx_after = min(len(df_sorted) - 1, idx_after)
             
             x_before = x_values[idx_before]
             x_after = x_values[idx_after]
             
-            if x_after == x_before:
+            if abs(x_after - x_before) < 1e-10:
+                # Points are essentially at same X value
                 new_row = df_sorted.iloc[idx_before].copy()
+                interp_type = "duplicated_x"
             else:
+                # Linear interpolation
                 weight = (new_x - x_before) / (x_after - x_before)
                 new_row = df_sorted.iloc[idx_before].copy()
                 
-                # Interpolate numeric columns
+                # Get all numeric columns for interpolation
                 numeric_columns = df_sorted.select_dtypes(include=[np.number]).columns
+                
                 for col in numeric_columns:
-                    if col != x_col:
+                    if col != x_col:  # Don't interpolate X column
                         try:
                             value_before = df_sorted.iloc[idx_before][col]
                             value_after = df_sorted.iloc[idx_after][col]
                             
+                            # Skip NaN values
                             if pd.isna(value_before) or pd.isna(value_after):
                                 continue
-                                
-                            interpolated_value = value_before + weight * (value_after - value_before)
-                            new_row[col] = interpolated_value
+                            
+                            # Linear interpolation with rounding
+                            interpolated = value_before + weight * (value_after - value_before)
+                            new_row[col] = round_if_decimal(interpolated)
+                            
+                        except (KeyError, TypeError, ValueError):
+                            continue
+                
+                # Handle categorical columns (take from closest point)
+                categorical_columns = df_sorted.select_dtypes(exclude=[np.number]).columns
+                for col in categorical_columns:
+                    if col not in [x_col, y_col]:
+                        try:
+                            if weight < 0.5:
+                                new_row[col] = df_sorted.iloc[idx_before][col]
+                            else:
+                                new_row[col] = df_sorted.iloc[idx_after][col]
                         except (KeyError, TypeError):
                             continue
-        except Exception:
+                
+                interp_type = "interpolated"
+                
+        except Exception as e:
+            # Fallback to nearest point
             new_row = df_sorted.iloc[0].copy()
+            interp_type = "fallback"
     
-    # Set the specified X and Y values
-    new_row[x_col] = new_x
-    new_row[y_col] = new_y
+    # Set final X and Y values with rounding
+    new_row[x_col] = new_x  # X is usually DOY (integer)
+    new_row[y_col] = round_if_decimal(new_y)
     
-    # Override with filter values if specified
+    # Override with single filter values if specified
     if species_filter and len(species_filter) == 1:
         new_row['Sc'] = species_filter[0]
     if site_filter and len(site_filter) == 1:
         new_row['SiteC'] = site_filter[0]
+    
+    # Apply rounding to all numeric columns in final row
+    for col in new_row.index:
+        try:
+            if col in df.select_dtypes(include=[np.number]).columns:
+                new_row[col] = round_if_decimal(new_row[col])
+        except (KeyError, TypeError):
+            continue
     
     return new_row
 
@@ -653,10 +763,20 @@ def update_plot(plot_clicks, update_clicks, add_clicks, remove_clicks,
                         if site_filter and len(site_filter) == 1:
                             filter_info.append(f"Site: {site_filter[0]}")
 
-                        if filter_info:
-                            status_message = f"✅ Added point at DOY {add_x} ({', '.join(filter_info)}). Total: {len(df)}"
-                        else:
-                            status_message = f"✅ Added interpolated point at DOY {add_x}. Total: {len(df)}"
+                        # Determine interpolation context
+                        context_info = ""
+                        if len(df) > 1:
+                            if add_x <= df[data_store['x_col']].min():
+                                context_info = " (extrapolated from first)"
+                            elif add_x >= df[data_store['x_col']].max():
+                                context_info = " (extrapolated from last)"
+                            else:
+                                context_info = " (interpolated)"
+
+                        filter_text = f" • {', '.join(filter_info)}" if filter_info else ""
+                        rounded_y = round(add_y, 2) if isinstance(add_y, float) and add_y != int(add_y) else add_y
+
+                        status_message = f"✅ Added point: DOY {add_x}, Y={rounded_y}{context_info}{filter_text}"
                     else:
                         status_message = "❌ Failed to create interpolated point"
 
@@ -1023,10 +1143,11 @@ def update_table(data, update_clicks, add_clicks, remove_clicks, x_minus_clicks,
     ])
 
 @app.callback(
-    Output("download-data", "data"),
+    Output("download-data", "data"), 
     [Input("download-btn", "n_clicks")],
     prevent_initial_call=True,
 )
+
 def download_data(n_clicks):
     if data_store['df'] is not None:
         return dcc.send_data_frame(data_store['df'].to_csv, "modified_data.DOY", sep='\t', index=False)
@@ -1037,11 +1158,41 @@ def download_data(n_clicks):
     [Input('reset-btn', 'n_clicks')],
     prevent_initial_call=True
 )
+
 def reset_data(n_clicks):
     if data_store['original_df'] is not None:
         data_store['df'] = data_store['original_df'].copy()
         return "Data reset to original values", {}
     return "No original data to reset", {}
+app.clientside_callback(
+    """
+    function(n_intervals) {
+        document.addEventListener('keydown', function(event) {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+                event.preventDefault();
+                
+                let buttonId = '';
+                switch(event.key) {
+                    case 'ArrowLeft': buttonId = 'x-minus-btn'; break;
+                    case 'ArrowRight': buttonId = 'x-plus-btn'; break;
+                    case 'ArrowDown': buttonId = 'y-minus-btn'; break;
+                    case 'ArrowUp': buttonId = 'y-plus-btn'; break;
+                }
+                
+                const button = document.getElementById(buttonId);
+                if (button) button.click();
+            }
+        });
+        return '';
+    }
+    """,
+    Output('keyboard-listener', 'children'),
+    Input('keyboard-listener', 'id')
+)
 
 if __name__ == '__main__':
     print("Starting FM-Trace Data Editor...")
