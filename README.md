@@ -4,7 +4,6 @@ A comprehensive web-based tool for analyzing and editing phenological (seasonal 
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Dash](https://img.shields.io/badge/Dash-Latest-green.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ##  Features
 
