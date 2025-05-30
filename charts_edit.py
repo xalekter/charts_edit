@@ -473,17 +473,25 @@ def update_plot(plot_clicks, update_clicks, add_clicks, remove_clicks,
         # Handle fine-tuning buttons
         if selected_point != "None" and step_size is not None:
             try:
+                
                 point_idx = int(selected_point)
                 current_x = df.iloc[point_idx, df.columns.get_loc(data_store['x_col'])]
                 current_y = df.iloc[point_idx, df.columns.get_loc(data_store['y_col'])]
+
+                if data_store['x_col'] == 'DOY':
+                    x_step_size = 1  # Whole days for DOY
+                elif 'date' in data_store['x_col'].lower():
+                    x_step_size = 1  # Whole days for any date column
+                else:
+                    x_step_size = step_size  # Use user-defined for other X columns
                 
                 if 'x-minus-btn' in trigger_id:
-                    new_x_val = current_x - step_size
+                    new_x_val = current_x - x_step_size
                     df.iloc[point_idx, df.columns.get_loc(data_store['x_col'])] = new_x_val
                     status_message = f"⬅️ Moved point {point_idx} X: {current_x:.3f} → {new_x_val:.3f}"
                     x_col, y_col = data_store['x_col'], data_store['y_col']
                 elif 'x-plus-btn' in trigger_id:
-                    new_x_val = current_x + step_size
+                    new_x_val = current_x + x_step_size
                     df.iloc[point_idx, df.columns.get_loc(data_store['x_col'])] = new_x_val
                     status_message = f"➡️ Moved point {point_idx} X: {current_x:.3f} → {new_x_val:.3f}"
                     x_col, y_col = data_store['x_col'], data_store['y_col']
