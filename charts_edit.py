@@ -56,15 +56,15 @@ app.layout = html.Div([
             html.H5("🔍 Data Filtering"),
             html.Div([
                 html.Label("Filter by Species (Sc): "),
-                dcc.Dropdown(id='species-filter', multi=True, placeholder="Select species (leave empty for all)", 
+                dcc.Dropdown(id='species-filter', multi=True, value=[],  placeholder="Select species (leave empty for all)", 
                            style={'width': '200px', 'display': 'inline-block', 'marginRight': 15}),
                 html.Label("Filter by Site (SiteC): "),
-                dcc.Dropdown(id='site-filter', multi=True, placeholder="Select sites (leave empty for all)", 
+                dcc.Dropdown(id='site-filter', multi=True, value=[],  placeholder="Select sites (leave empty for all)", 
                            style={'width': '200px', 'display': 'inline-block', 'marginRight': 15}),
             ], style={'marginBottom': 10}),
             html.Div([
                 html.Label("Filter by Description: "),
-                dcc.Dropdown(id='description-filter', multi=True, placeholder="Select descriptions (optional)", 
+                dcc.Dropdown(id='description-filter', multi=True, value=[], placeholder="Select descriptions (optional)", 
                            style={'width': '300px', 'display': 'inline-block'}),
             ], style={'marginBottom': 15}),
             html.Div(id='filter-status', style={'fontSize': '14px', 'color': '#6c757d', 'marginBottom': 10}),
@@ -75,14 +75,14 @@ app.layout = html.Div([
             html.H5("📅 Phenological Date Markers"),
             html.Div([
                 html.Label("Add Important DOY: "),
-                dcc.Input(id='marker-doy', type='number', placeholder="DOY (1-365)", min=1, max=365, 
+                dcc.Input(id='marker-doy', type='number', placeholder="DOY (1-365)", min=1, max=365, value="",
                          style={'width': '100px', 'marginRight': 10}),
                 html.Label("Label: "),
-                dcc.Input(id='marker-label', type='text', placeholder="e.g., First Buds", 
+                dcc.Input(id='marker-label', type='text', placeholder="e.g., First Buds", value="",
                          style={'width': '150px', 'marginRight': 10}),
                 html.Label("Color: "),
                 dcc.Dropdown(
-                    id='marker-color',
+                    id='marker-color', value='red',
                     options=[
                         {'label': '🔴 Red', 'value': 'red'},
                         {'label': '🟠 Orange', 'value': 'orange'},
@@ -93,7 +93,6 @@ app.layout = html.Div([
                         {'label': '🟤 Brown', 'value': 'brown'},
                         {'label': '⚫ Black', 'value': 'black'}
                     ],
-                    value='red',
                     style={'width': '120px', 'display': 'inline-block', 'marginRight': 10}
                 ),
                 html.Button('Add Marker', id='add-marker-btn', 
@@ -120,9 +119,9 @@ app.layout = html.Div([
             html.H5("📊 Axis Selection"),
             html.Div([
                 html.Label("X-axis Column:"),
-                dcc.Dropdown(id='x-column', style={'width': '200px', 'display': 'inline-block', 'marginRight': 20}),
+                dcc.Dropdown(id='x-column', value="", style={'width': '200px', 'display': 'inline-block', 'marginRight': 20}),
                 html.Label("Y-axis Column:"),
-                dcc.Dropdown(id='y-column', style={'width': '200px', 'display': 'inline-block'}),
+                dcc.Dropdown(id='y-column', value="", style={'width': '200px', 'display': 'inline-block'}),
             ]),
             html.Button('Create Plot', id='plot-btn', style={'margin': '10px', 'backgroundColor': '#17a2b8', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px'}),
         ]),
@@ -139,9 +138,9 @@ app.layout = html.Div([
                 html.Span("Selected: ", style={'fontWeight': 'bold'}),
                 html.Span(id='selected-point', children="None", style={'fontWeight': 'bold', 'color': 'blue', 'marginRight': 20}),
                 html.Label("X: "),
-                dcc.Input(id='new-x-value', type='number', step=0.01, style={'width': '100px', 'marginRight': 10}),
+                dcc.Input(id='new-x-value', type='number', step=0.01, value="", style={'width': '100px', 'marginRight': 10}),
                 html.Label("Y: "),
-                dcc.Input(id='new-y-value', type='number', step=0.01, style={'width': '100px', 'marginRight': 10}),
+                dcc.Input(id='new-y-value', type='number', step=0.01, value="",  style={'width': '100px', 'marginRight': 10}),
                 html.Button('Update', id='update-point-btn', style={'backgroundColor': '#007bff', 'color': 'white', 'border': 'none', 'padding': '5px 15px', 'borderRadius': '4px', 'marginRight': 10}),
                 html.Button('Delete', id='remove-point-btn', style={'backgroundColor': '#dc3545', 'color': 'white', 'border': 'none', 'padding': '5px 15px', 'borderRadius': '4px'}),
             ], style={'display': 'flex', 'alignItems': 'center', 'gap': '10px'}),
@@ -169,9 +168,9 @@ app.layout = html.Div([
                 style={'fontSize': '12px', 'color': '#6c757d', 'marginBottom': 10}),
             html.Div([
                 html.Label("X: "),
-                dcc.Input(id='add-x-value', type='number', step=0.01, style={'width': '100px', 'marginRight': 15}),
+                dcc.Input(id='add-x-value', type='number', step=0.01, value="", style={'width': '100px', 'marginRight': 15}),
                 html.Label("Y: "),
-                dcc.Input(id='add-y-value', type='number', step=0.01, style={'width': '100px', 'marginRight': 15}),
+                dcc.Input(id='add-y-value', type='number', step=0.01, value="",  style={'width': '100px', 'marginRight': 15}),
                 html.Button('Add Point', id='add-point-btn', style={'backgroundColor': '#28a745', 'color': 'white', 'border': 'none', 'padding': '8px 16px', 'borderRadius': '4px'}),
             ], style={'display': 'flex', 'alignItems': 'center'}),
             html.Div(id='add-point-status', style={'marginTop': 10, 'fontSize': '14px'}),
@@ -220,36 +219,42 @@ app.layout = html.Div([
         }
     ),
     
-    # Status
+       # Status
     html.Div(id='status', style={'marginTop': 20, 'padding': 10, 'backgroundColor': '#f0f0f0'}),
-
-# Keyboard handler script
-html.Script("""
-    document.addEventListener('keydown', function(event) {
-        // Only handle when not typing in inputs
-        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-            return;
-        }
-        
-        // Handle arrow keys
-        if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            const btn = document.getElementById('x-minus-btn');
-            if (btn) btn.click();
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            const btn = document.getElementById('x-plus-btn');
-            if (btn) btn.click();
-        } else if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            const btn = document.getElementById('y-minus-btn');
-            if (btn) btn.click();
-        } else if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            const btn = document.getElementById('y-plus-btn');
-            if (btn) btn.click();
-        }
-    });
+    
+    # Keyboard navigation script
+    html.Script("""
+        document.addEventListener('keydown', function(event) {
+            // Don't interfere when typing in inputs
+            if (document.activeElement.tagName === 'INPUT' || 
+                document.activeElement.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            // Handle arrow keys for point editing
+            switch(event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    const leftBtn = document.getElementById('x-minus-btn');
+                    if (leftBtn) leftBtn.click();
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    const rightBtn = document.getElementById('x-plus-btn');
+                    if (rightBtn) rightBtn.click();
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    const downBtn = document.getElementById('y-minus-btn');
+                    if (downBtn) downBtn.click();
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    const upBtn = document.getElementById('y-plus-btn');
+                    if (upBtn) upBtn.click();
+                    break;
+            }
+        });
     """)
 ])
 
@@ -477,11 +482,12 @@ def display_current_markers():
 )
 def update_output(contents, filename):
     if contents is None:
-        return "", [], [], None, None, [], [], [], ""
+        # Return empty but defined values
+        return "", [], [], "", "", [], [], [], ""
     
     df, message = parse_contents(contents, filename)
     if df is None:
-        return message, [], [], None, None, [], [], [], ""
+        return message, [], [], "", "", [], [], [], ""
     
     # Store data globally
     data_store['df'] = df
@@ -496,24 +502,21 @@ def update_output(contents, filename):
     site_options = []
     description_options = []
     
-    # Species filter (Sc column)
     if 'Sc' in df.columns:
         unique_species = sorted(df['Sc'].dropna().unique())
         species_options = [{'label': species, 'value': species} for species in unique_species]
     
-    # Site filter (SiteC column)
     if 'SiteC' in df.columns:
         unique_sites = sorted(df['SiteC'].dropna().unique())
         site_options = [{'label': site, 'value': site} for site in unique_sites]
     
-    # Description filter
     if 'Description' in df.columns:
         unique_descriptions = sorted(df['Description'].dropna().unique())
         description_options = [{'label': desc, 'value': desc} for desc in unique_descriptions if desc != '-']
     
-    # Set default values
-    x_default = 'DOY' if 'DOY' in df.columns else df.columns[0]
-    y_default = None
+    # Set default values - ensure they're never None
+    x_default = 'DOY' if 'DOY' in df.columns else (df.columns[0] if len(df.columns) > 0 else "")
+    y_default = ""
     if len(numeric_columns) > 1:
         y_default = numeric_columns[1]['value']
     elif len(numeric_columns) > 0:
@@ -528,6 +531,11 @@ def update_output(contents, filename):
      Input('description-filter', 'value')]
 )
 def update_filter_status(species_filter, site_filter, description_filter):
+    # Handle None values by converting to empty lists
+    species_filter = species_filter or []
+    site_filter = site_filter or []
+    description_filter = description_filter or []
+    
     if not species_filter and not site_filter and not description_filter:
         return "📊 Showing all data"
     
@@ -601,9 +609,9 @@ def manage_markers(add_clicks, spring_clicks, peak_clicks, autumn_clicks, winter
             })
             
             # Clear input fields after adding
-            return display_current_markers(), None, ""
+            return display_current_markers(), "", ""  # ← Changed None to ""
     
-    return display_current_markers(), marker_doy, marker_label
+    return display_current_markers(), marker_doy or "", marker_label or ""  # ← Handle None values
 
 @app.callback(
     Output('current-markers', 'children', allow_duplicate=True),
@@ -1031,14 +1039,15 @@ def update_plot(plot_clicks, update_clicks, add_clicks, remove_clicks,
     [State('x-column', 'value'),
      State('y-column', 'value'),
      State('selected-point', 'children'),
-     State('step-size', 'value')]
+     State('step-size', 'value')],
+    prevent_initial_call=True  # ← Add this line
 )
 def select_point(clickData, remove_clicks, x_minus_clicks, x_plus_clicks, y_minus_clicks, y_plus_clicks, x_col, y_col, selected_point, step_size):
     ctx = callback_context
     
     # If remove button was clicked, clear selection
     if ctx.triggered and 'remove-point-btn' in ctx.triggered[0]['prop_id']:
-        return "None", None, None
+        return "None", "", ""  # ← Changed None to ""
     
     # Handle fine-tuning buttons - update the input values to reflect changes
     if ctx.triggered and selected_point != "None" and data_store['df'] is not None:
@@ -1057,25 +1066,25 @@ def select_point(clickData, remove_clicks, x_minus_clicks, x_plus_clicks, y_minu
                 pass
     
     if clickData is None or data_store['df'] is None:
-        return "None", None, None
+        return "None", "", ""  # ← Changed None to ""
     
     # Get the clicked point - check if it's from the editable points trace
     clicked_point = clickData['points'][0]
     
     # Only handle clicks on the editable points trace (red circles)
     if 'customdata' not in clicked_point:
-        return "None", None, None
+        return "None", "", ""  # ← Changed None to ""
         
     point_idx = clicked_point['customdata']
     df = data_store['df']
     
     # Check if point index is still valid (in case points were removed)
     if point_idx >= len(df):
-        return "None", None, None
+        return "None", "", ""  # ← Changed None to ""
     
     # Get current values
-    current_x = df.iloc[point_idx][x_col] if x_col else None
-    current_y = df.iloc[point_idx][y_col] if y_col else None
+    current_x = df.iloc[point_idx][x_col] if x_col else ""  # ← Changed None to ""
+    current_y = df.iloc[point_idx][y_col] if y_col else ""  # ← Changed None to ""
     
     return str(point_idx), current_x, current_y
 
@@ -1090,8 +1099,8 @@ def select_point(clickData, remove_clicks, x_minus_clicks, x_plus_clicks, y_minu
 )
 def clear_add_inputs(n_clicks, add_x, add_y):
     if add_x is not None and add_y is not None:
-        return f"✅ Point ({add_x}, {add_y}) added successfully!", None, None
-    return "⚠️ Please enter both X and Y values", None, None
+        return f"✅ Point ({add_x}, {add_y}) added successfully!", "", ""  # ← Changed None to ""
+    return "⚠️ Please enter both X and Y values", "", ""  # ← Changed None to ""
 
 @app.callback(
     Output('data-table', 'children'),
